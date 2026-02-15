@@ -1,0 +1,83 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.app-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.clock {
+  text-align: center;
+}
+
+.time {
+  font-size: 5rem;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.date {
+  font-size: 1.5rem;
+  color: #aaa;
+}
+
+.weather-container {
+  width: 100%;
+  text-align: center;
+}
+
+.weather-icon {
+  /* height: 150px; */
+  width: 150px;
+  /* margin-bottom: 1rem; */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.weather-main {
+  font-size: 2.5rem;
+  /* margin-bottom: 0.5rem; */
+}
+
+.weather-details {
+  font-size: 1.25rem;
+  color: #aaa;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.loading {
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.error {
+  color: #ff6b6b;
+  font-size: 1rem;
+}
