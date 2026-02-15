@@ -142,7 +142,7 @@ export function Weather() {
   return (
     <div className="weather-container">
       <img 
-        src={`/src/Assets/Icons/${getWeatherIcon(weather.weatherCode)}`} 
+        src={`/Assets/Icons/${getWeatherIcon(weather.weatherCode)}`} 
         alt={weather.description}
         className="weather-icon"
       />
