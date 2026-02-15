@@ -54,10 +54,100 @@ This builds optimized assets and serves them, accessible at `http://0.0.0.0:4173
 
 ## Raspberry Pi Setup Tips
 
-1. **Enable Geolocation**: Make sure Chrome/Chromium allows geolocation access
-2. **Autostart**: Create a systemd service to start the app on boot
-3. **Kiosk Mode**: Use Chromium with `--kiosk` flag for full-screen mode
-4. **Disable Screensaver**: Configure your Pi to keep the display on
+### Autostart on Boot (Raspberry Pi OS 64-bit Trixie)
+
+To automatically start the Smart Hub on boot, create a systemd service file.
+
+#### Step 1: Create a systemd service file
+
+Create a new service file:
+```bash
+sudo nano /etc/systemd/system/smart-hub.service
+```
+
+#### Step 2: Add the following content
+
+Replace `/home/pi` with your actual home directory path if different:
+
+```ini
+[Unit]
+Description=Smart Hub - Weather and Time Display
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Smart-Hub
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+ExecStart=/usr/bin/npm run serve
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### Step 3: Enable and start the service
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable smart-hub.service
+sudo systemctl start smart-hub.service
+```
+
+#### Step 4: Verify the service is running
+
+```bash
+sudo systemctl status smart-hub.service
+```
+
+#### Step 5: View logs (if needed)
+
+```bash
+sudo journalctl -u smart-hub.service -f
+```
+
+### Auto-Launch Browser in Kiosk Mode
+
+To automatically open the dashboard in fullscreen Chromium on boot:
+
+#### Step 1: Create an autostart entry
+
+```bash
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/smart-hub-browser.desktop
+```
+
+#### Step 2: Add the following content
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Smart Hub Browser
+Comment=Open Smart Hub in fullscreen
+Exec=chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:4173
+AutoStart=true
+X-GNOME-Autostart-enabled=true
+```
+
+### Additional Configuration
+
+1. **Disable Screensaver**: Edit `/etc/lightdm/lightdm.conf` and add:
+   ```
+   xserver-command=X -s 0 -dpms
+   ```
+
+2. **Enable Geolocation in Chromium**: Add this to your systemd service or use a chromium policy file at `/etc/chromium-browser/policies/managed/policy.json`
+
+3. **Network Configuration**: Use `nmtui` to configure WiFi if not already set up
+
+### Troubleshooting
+
+- **Service won't start**: Check logs with `sudo journalctl -u smart-hub.service -n 50`
+- **Port 4173 already in use**: Modify the port in `vite.config.js`
+- **Browser won't open**: Ensure X11 is running and DISPLAY is set correctly
+- **Geolocation denied**: Add `--allow-running-insecure-content` flag to Chromium launch command
 
 ## Configuration
 
