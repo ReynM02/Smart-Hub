@@ -142,12 +142,136 @@ X-GNOME-Autostart-enabled=true
 
 3. **Network Configuration**: Use `nmtui` to configure WiFi if not already set up
 
+### Terminal-Only Boot (Headless/Embedded Setup)
+
+If you prefer a cleaner embedded experience booting directly to terminal without the full desktop:
+
+#### Prerequisites
+
+Install minimal X11 and Chromium:
+```bash
+sudo apt update
+sudo apt install -y xserver-xorg-core xinit chromium-browser
+```
+
+#### Create a Terminal Boot Script
+
+Create `/home/pi/start-smart-hub.sh`:
+
+```bash
+#!/bin/bash
+
+# Wait for network to be available
+sleep 5
+
+# Start X server with Chromium in the background
+startx -- /usr/bin/chromium-browser \
+  --noerrdialogs \
+  --disable-infobars \
+  --kiosk \
+  http://localhost:4173 &
+
+# Start the Node server
+cd /home/pi/Smart-Hub
+npm run serve
+```
+
+Make it executable:
+```bash
+chmod +x /home/pi/start-smart-hub.sh
+```
+
+#### Update systemd Service
+
+Modify the service file at `/etc/systemd/system/smart-hub.service`:
+
+```ini
+[Unit]
+Description=Smart Hub - Weather and Time Display
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/home/pi/start-smart-hub.sh
+Restart=on-failure
+RestartSec=10
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then reload and restart:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart smart-hub.service
+```
+
+### Raspberry Pi OS Lite Considerations
+
+**Pros:**
+- Significantly smaller OS footprint (~1GB vs ~3-4GB for full OS)
+- Faster boot times
+- Lower RAM usage (core services only)
+- Ideal for embedded/kiosk applications
+- Better performance on Raspberry Pi 4 with limited resources
+
+**Cons:**
+- Requires manual installation of X11 and Chromium
+- No built-in desktop environment utilities
+- Steeper learning curve for troubleshooting
+
+#### Installation Steps for Lite
+
+1. **Flash latest Raspberry Pi OS Lite (Trixie 64-bit)**
+   - Use Raspberry Pi Imager with SSH enabled
+
+2. **Install essentials:**
+   ```bash
+   sudo apt update
+   sudo apt install -y \
+     curl \
+     gnupg \
+     ca-certificates \
+     python3 \
+     git
+   ```
+
+3. **Install Node.js (lightweight version):**
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt install -y nodejs
+   ```
+
+4. **Install X11 and Chromium (minimal):**
+   ```bash
+   sudo apt install -y xserver-xorg-core xinit chromium-browser
+   ```
+
+5. **Configure auto-login:**
+   ```bash
+   sudo raspi-config
+   # System Options > Boot / Auto Login > Console Autologin
+   ```
+
+6. **Add startup script to .bashrc:**
+   ```bash
+   echo '/home/pi/start-smart-hub.sh' >> ~/.bashrc
+   ```
+
+**Project Impact:**
+The React application itself is completely unaffected by the OS choice. The project will run identically on both setups—only the underlying system differs. The Node server and browser rendering remain unchanged.
+
 ### Troubleshooting
 
 - **Service won't start**: Check logs with `sudo journalctl -u smart-hub.service -n 50`
 - **Port 4173 already in use**: Modify the port in `vite.config.js`
-- **Browser won't open**: Ensure X11 is running and DISPLAY is set correctly
+- **Browser won't open**: Ensure X11 is running and DISPLAY is set correctly (`echo $DISPLAY` should show `:0`)
 - **Geolocation denied**: Add `--allow-running-insecure-content` flag to Chromium launch command
+- **"Cannot open display" error**: X server isn't running; check with `ps aux | grep X`
 
 ## Configuration
 
