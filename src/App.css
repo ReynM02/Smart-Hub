@@ -2,6 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  cursor: none /* Hide default cursor */;
 }
 
 html, body, #root {
@@ -53,9 +54,11 @@ body {
 }
 
 .weather-icon {
-  /* height: 150px; */
-  width: 150px;
-  /* margin-bottom: 1rem; */
+  width: 80px;
+  height: 80px;
+  margin: 0.25rem 0;
+  object-fit: contain;
+  object-position: center;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
