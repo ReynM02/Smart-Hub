@@ -70,124 +70,108 @@ function getWeatherIcon(weatherCode) {
   return `${iconBase}.svg`
 }
 
-export function Weather() {
-  const [weather, setWeather] = useState(null)
+export function Forecast({ location }) {
+  const [forecast, setForecast] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const CACHE_KEY = 'weather-cache'
+  const CACHE_KEY = 'forecast-cache'
   const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes in milliseconds
-  const LOADING_TIMEOUT = 10 * 1000 // Show loading message after 10 seconds
 
   useEffect(() => {
-    let loadingTimer = null
-
-    const fetchWeather = async () => {
+    const fetchForecast = async () => {
       try {
+        setLoading(true)
         setError(null)
 
-        // Check if cached weather exists and is still valid FIRST
+        // Check if cached forecast exists and is still valid
         const cached = localStorage.getItem(CACHE_KEY)
         if (cached) {
           const { data, timestamp } = JSON.parse(cached)
           const now = Date.now()
           
           if (now - timestamp < CACHE_DURATION) {
-            setWeather(data)
+            // Reconstruct Date objects from cached strings
+            const reconstructed = data.map(day => ({
+              ...day,
+              date: new Date(day.date)
+            }))
+            setForecast(reconstructed)
             setLoading(false)
             return
           }
         }
 
-        // Only set loading timer if we're actually fetching new data
-        loadingTimer = setTimeout(() => {
-          setLoading(true)
-        }, LOADING_TIMEOUT)
-
-        // For demo purposes, using a fixed location (New York City)
+        // For demo purposes, using a fixed location
         const position = {
           coords: { latitude: 43.1457025, longitude: -86.196591 }
         }
 
-        // Get user's location
-        // const position = await new Promise((resolve, reject) => {
-        //   navigator.geolocation.getCurrentPosition(resolve, reject)
-        // })
-
         const { latitude, longitude } = position.coords
 
-        // Fetch weather using Open-Meteo API (free, no API key required)
         const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit`
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`
         )
 
-        if (!response.ok) throw new Error('Weather fetch failed')
+        if (!response.ok) throw new Error('Forecast fetch failed')
 
         const data = await response.json()
-        const current = data.current
+        const days = data.daily
 
-        // Get location name from coordinates using reverse geocoding
-        const geoResponse = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-        )
-        const geoData = await geoResponse.json()
-        const address = geoData.address || {}
-        const city = address.city || address.town || address.village || 'Unknown'
-        const state = address.state || ''
-        const locationName = state ? `${city}, ${state}` : city
+        // Get next 7 days
+        const forecastDays = days.time.slice(0, 7).map((date, index) => ({
+          date: new Date(date),
+          high: Math.round(days.temperature_2m_max[index]),
+          low: Math.round(days.temperature_2m_min[index]),
+          weatherCode: days.weather_code[index],
+          description: weatherCodeMap[days.weather_code[index]].description || 'Unknown'
+        }))
 
-        const weatherData = {
-          temperature: Math.round(current.temperature_2m),
-          description: weatherCodeMap[current.weather_code].description || 'Unknown',
-          humidity: current.relative_humidity_2m,
-          weatherCode: current.weather_code,
-          location: locationName
-        }
+        setForecast(forecastDays)
 
-        clearTimeout(loadingTimer)
-        setWeather(weatherData)
-        setLoading(false)
-
-        // Cache the weather data with current timestamp
+        // Cache the forecast data with current timestamp
         localStorage.setItem(CACHE_KEY, JSON.stringify({
-          data: weatherData,
+          data: forecastDays,
           timestamp: Date.now()
         }))
       } catch (err) {
-        clearTimeout(loadingTimer)
-        setError('Unable to fetch weather')
-        setLoading(false)
+        setError('Unable to fetch forecast')
         console.error(err)
+      } finally {
+        setLoading(false)
       }
     }
 
-    fetchWeather()
-
-    // Refresh weather every 10 minutes
-    const interval = setInterval(fetchWeather, 10 * 60 * 1000)
-    return () => {
-      clearInterval(interval)
-      clearTimeout(loadingTimer)
-    }
+    fetchForecast()
   }, [])
 
-  if (loading) return <div className="weather-container"><div className="loading">Loading weather...</div></div>
-  if (error) return <div className="weather-container"><div className="error">{error}</div></div>
-  if (!weather) return null
+  if (loading) return <div className="forecast-container"><div className="loading">Loading forecast...</div></div>
+  if (error) return <div className="forecast-container"><div className="error">{error}</div></div>
+  if (!forecast) return null
 
   return (
-    <div className="weather-container">
-      <img 
-        src={`/Assets/Icons/${getWeatherIcon(weather.weatherCode)}`} 
-        alt={weather.description}
-        className="weather-icon"
-      />
-      <div className="weather-main">{weather.temperature}°F</div>
-      <div className="weather-details">
-        <div>{weather.description}</div>
-        <div>Humidity: {weather.humidity}%</div>
+    <div className="forecast-container">
+      <h2 className="forecast-title">7-Day Forecast</h2>
+      <div className="forecast-grid">
+        {forecast.map((day, index) => (
+          <div key={index} className="forecast-day">
+            <div className="forecast-day-name">
+              {index === 0 ? 'Today' : day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+            </div>
+            <img 
+              src={`/Assets/Icons/${getWeatherIcon(day.weatherCode)}`} 
+              alt={day.description}
+              className="forecast-icon"
+            />
+            <div className="forecast-description">{day.description}</div>
+            <div className="forecast-temps">
+              <span className="forecast-high">{day.high}°</span>
+              <span className="forecast-low">{day.low}°</span>
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="weather-details">{weather.location}</div>
+      <div className="forecast-hint">Click to return to main screen</div>
     </div>
   )
 }
