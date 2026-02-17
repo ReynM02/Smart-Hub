@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Hub - Upload Images</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+          sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+      }
+
+      .container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+        padding: 2rem;
+      }
+
+      h1 {
+        color: #1e3c72;
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+      }
+
+      .upload-section {
+        margin-bottom: 2rem;
+      }
+
+      .upload-area {
+        border: 2px dashed #0066cc;
+        background: #f5f9ff;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .upload-area:hover {
+        border-color: #0052a3;
+        background: #e8f4ff;
+      }
+
+      .upload-area.dragover {
+        border-color: #00cc00;
+        background: #e8ffe8;
+      }
+
+      .upload-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .upload-text {
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .upload-hint {
+        color: #999;
+        font-size: 0.85rem;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      .images-list {
+        margin-top: 2rem;
+      }
+
+      .images-title {
+        color: #1e3c72;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+      }
+
+      .image-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f0f0f0;
+        aspect-ratio: 1;
+      }
+
+      .image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .image-delete {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(255, 0, 0, 0.8);
+        color: white;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        transition: background 0.2s;
+      }
+
+      .image-delete:hover {
+        background: rgba(255, 0, 0, 1);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+      }
+
+      .btn-primary {
+        background: #0066cc;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0052a3;
+      }
+
+      .btn-danger {
+        background: #cc0000;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #990000;
+      }
+
+      .btn-danger:disabled {
+        background: #999;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .status {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 6px;
+        display: none;
+      }
+
+      .status.show {
+        display: block;
+      }
+
+      .status.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #4caf50;
+      }
+
+      .status.error {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #f44336;
+      }
+
+      .status.info {
+        background: #e3f2fd;
+        color: #1565c0;
+        border: 1px solid #2196f3;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        color: #666;
+      }
+
+      .loading.show {
+        display: block;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #0066cc;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .no-images {
+        text-align: center;
+        color: #999;
+        padding: 2rem;
+        font-style: italic;
+      }
+
+      .image-count {
+        background: #f0f0f0;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 1.5rem;
+        }
+
+        h1 {
+          font-size: 1.5rem;
+        }
+
+        .images-grid {
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📸 Smart Hub Upload</h1>
+      <p class="subtitle">Upload images to display in the screensaver</p>
+
+      <div class="upload-section">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Click to upload or drag images here</div>
+          <div class="upload-hint">PNG, JPG, GIF, WebP (max 50MB)</div>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*" />
+      </div>
+
+      <div class="loading" id="loading">
+        <span class="spinner"></span> Uploading...
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="images-list">
+        <div class="images-title">
+          <span>Uploaded Images</span>
+          <span class="image-count"><span id="imageCount">0</span> images</span>
+        </div>
+        <div class="images-grid" id="imagesGrid"></div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+          + Upload Images
+        </button>
+        <button class="btn-danger" id="clearBtn" onclick="clearAllImages()" disabled>
+          Clear All
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById('uploadArea')
+      const fileInput = document.getElementById('fileInput')
+      const imagesGrid = document.getElementById('imagesGrid')
+      const statusDiv = document.getElementById('status')
+      const loadingDiv = document.getElementById('loading')
+      const imageCountSpan = document.getElementById('imageCount')
+      const clearBtn = document.getElementById('clearBtn')
+
+      // Setup drag and drop
+      uploadArea.addEventListener('click', () => fileInput.click())
+
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault()
+        uploadArea.classList.add('dragover')
+      })
+
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover')
+      })
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault()
+        uploadArea.classList.remove('dragover')
+        const files = e.dataTransfer.files
+        handleFiles(files)
+      })
+
+      fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files)
+      })
+
+      async function handleFiles(files) {
+        const imageFiles = Array.from(files).filter((file) =>
+          file.type.startsWith('image/')
+        )
+
+        if (imageFiles.length === 0) {
+          showStatus('No image files selected', 'error')
+          return
+        }
+
+        loadingDiv.classList.add('show')
+        let successCount = 0
+        let errorCount = 0
+
+        for (const file of imageFiles) {
+          try {
+            const formData = new FormData()
+            formData.append('image', file)
+
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData
+            })
+
+            if (response.ok) {
+              successCount++
+            } else {
+              errorCount++
+            }
+          } catch (err) {
+            console.error('Upload error:', err)
+            errorCount++
+          }
+        }
+
+        loadingDiv.classList.remove('show')
+
+        if (errorCount === 0) {
+          showStatus(
+            `✓ Successfully uploaded ${successCount} image(s)`,
+            'success'
+          )
+        } else {
+          showStatus(
+            `Uploaded ${successCount}, failed ${errorCount}. Please try again.`,
+            'error'
+          )
+        }
+
+        fileInput.value = ''
+        loadImages()
+      }
+
+      async function loadImages() {
+        try {
+          const response = await fetch('/api/images')
+          const images = await response.json()
+
+          imagesGrid.innerHTML = ''
+          imageCountSpan.textContent = images.length
+          clearBtn.disabled = images.length === 0
+
+          if (images.length === 0) {
+            imagesGrid.innerHTML =
+              '<div class="no-images">No images uploaded yet</div>'
+            return
+          }
+
+          images.forEach((image) => {
+            const item = document.createElement('div')
+            item.className = 'image-item'
+
+            const img = document.createElement('img')
+            img.src = image.url
+            img.alt = image.name
+
+            const deleteBtn = document.createElement('button')
+            deleteBtn.className = 'image-delete'
+            deleteBtn.textContent = '✕'
+            deleteBtn.onclick = (e) => {
+              e.stopPropagation()
+              deleteImage(image.id)
+            }
+
+            item.appendChild(img)
+            item.appendChild(deleteBtn)
+            imagesGrid.appendChild(item)
+          })
+        } catch (err) {
+          console.error('Error loading images:', err)
+          showStatus('Failed to load images', 'error')
+        }
+      }
+
+      async function deleteImage(id) {
+        if (!confirm('Delete this image?')) return
+
+        try {
+          const response = await fetch(`/api/images/${id}`, {
+            method: 'DELETE'
+          })
+
+          if (response.ok) {
+            showStatus('Image deleted', 'success')
+            loadImages()
+          } else {
+            showStatus('Failed to delete image', 'error')
+          }
+        } catch (err) {
+          console.error('Delete error:', err)
+          showStatus('Failed to delete image', 'error')
+        }
+      }
+
+      async function clearAllImages() {
+        if (!confirm('Delete ALL images? This cannot be undone.')) return
+
+        try {
+          const response = await fetch('/api/images', {
+            method: 'DELETE'
+          })
+
+          if (response.ok) {
+            showStatus('All images deleted', 'success')
+            loadImages()
+          } else {
+            showStatus('Failed to delete images', 'error')
+          }
+        } catch (err) {
+          console.error('Clear error:', err)
+          showStatus('Failed to delete images', 'error')
+        }
+      }
+
+      function showStatus(message, type) {
+        statusDiv.textContent = message
+        statusDiv.className = `status show ${type}`
+        setTimeout(() => {
+          statusDiv.classList.remove('show')
+        }, 5000)
+      }
+
+      // Load images on page load
+      loadImages()
+    </script>
+  </body>
+</html>
